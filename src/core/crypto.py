@@ -1,5 +1,4 @@
-from hashlib import algorithms_available
-
+from pathlib import Path
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -9,13 +8,11 @@ import os
 class crypto:
     def __init__(self):
         self.cipher = None
-        base_dir = os.path(__file__).parents[1]
-        base_dir = base_dir.parent
+        base_dir = Path(__file__).resolve().parents[2]
         data_dir = base_dir/ 'data'
-
         data_dir.mkdir(exist_ok=True)
 
-        self.salt_file = str(data_dir/ "salt.key")
+        self.salt_file = data_dir/ "salt.key"
 
     def initialize_master_password(self, master_password: str):
         salt = self._load_or_create_salt()
@@ -23,14 +20,14 @@ class crypto:
         self.cipher = Fernet(key)
 
     def _load_or_create_salt(self):
-        if os.path.exists(self.salt_file):
-            with open(self.salt_file, 'rb') as salt:
-                return salt.read()
+        if self.salt_file.exists():
+            with open(self.salt_file, 'rb') as f:
+                return f.read()
         else:
-            salt = os.urandom(16)
-            with open(self.salt_file, 'wb') as salt:
-                salt.write(salt)
-            return salt
+            salt_byte = os.urandom(16)
+            with open(self.salt_file, 'wb') as f:
+                f.write(salt_byte)
+            return salt_byte
 
     def _derive_key(self, password: str, salt: bytes):
         kdf = PBKDF2HMAC(
